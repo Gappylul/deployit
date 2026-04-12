@@ -6,7 +6,7 @@ Deploy any project to your homelab Kubernetes cluster with a single command.
 deployit deploy ./my-project --host myapp.yourdomain.com
 ```
 
-Detects your framework, builds an arm64 Docker image, pushes it to your container registry, and deploys it to your cluster automatically. No YAML, no Dockerfile required.
+Detects your framework, builds an arm64 Docker image, pushes it to your container registry, deploys it to your cluster, and configures Cloudflare DNS automatically. No YAML, no Dockerfile, no dashboard clicks required.
 
 ## How it works
 
@@ -23,18 +23,18 @@ creates WebApp custom resource on the cluster
         ↓
 webapp-operator reconciles → Deployment + Service + Ingress
         ↓
-✓ deployed to https://myapp.yourdomain.com
+Cloudflare tunnel route added + DNS CNAME created
+        ↓
+https://myapp.yourdomain.com is live
 ```
 
 ## Requirements
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) running locally
-- `kubectl` configured and pointing at your cluster (`~/.kube/config`)
-- [webapp-operator](https://github.com/gappylul/webapp-operator) installed on the cluster
-- Logged into your container registry:
-  ```bash
-  echo $PAT | docker login ghcr.io -u YOUR_USERNAME --password-stdin
-  ```
+- Docker Desktop running locally
+- kubectl configured and pointing at your cluster (~/.kube/config)
+- webapp-operator installed on the cluster
+- Logged into your container registry
+- A Cloudflare tunnel set up for your domain
 
 ## Installation
 
@@ -42,17 +42,33 @@ webapp-operator reconciles → Deployment + Service + Ingress
 git clone https://github.com/gappylul/deployit
 cd deployit
 go build -o deployit .
-mv deployit /usr/local/bin/deployit
+sudo mv deployit /usr/local/bin/deployit
 ```
 
 ## Setup
 
-Set your registry once so you don't have to pass it every time:
+Store secrets in a dedicated file:
 
 ```bash
+cat > ~/.secrets << 'SECRETS'
 export DEPLOYIT_REGISTRY=ghcr.io/your-username
-# add to ~/.zshrc or ~/.bashrc to make it permanent
+export CLOUDFLARE_TOKEN=your_token
+export CLOUDFLARE_ACCOUNT_ID=your_account_id
+export CLOUDFLARE_TUNNEL_ID=your_tunnel_id
+export CLOUDFLARE_ZONE_ID=your_zone_id
+SECRETS
+
+chmod 600 ~/.secrets
+echo 'source ~/.secrets' >> ~/.zshrc
+source ~/.secrets
 ```
+
+Cloudflare API token permissions required:
+- Account → Cloudflare Tunnel → Edit
+- Account → Account Settings → Read
+- Zone → DNS → Edit (for your domain)
+
+If Cloudflare env vars are not set, deployit will skip DNS automation and warn you rather than failing.
 
 ## Usage
 
@@ -63,23 +79,16 @@ deployit deploy <path> --host <hostname> [--replicas <n>] [--registry <registry>
 ```
 
 ```bash
-# uses DEPLOYIT_REGISTRY env var
 deployit deploy ./my-api --host api.yourdomain.com
-
-# explicit registry
-deployit deploy ./my-api --host api.yourdomain.com --registry ghcr.io/your-username
-
-# deploy with 3 replicas
 deployit deploy ./my-api --host api.yourdomain.com --replicas 3
+deployit deploy ./my-api --host api.yourdomain.com --registry ghcr.io/your-username
 ```
 
 ### List deployed apps
 
 ```bash
 deployit list
-```
 
-```
 NAME                 REPLICAS   HOST
 my-api               2          api.yourdomain.com
 my-frontend          1          app.yourdomain.com
@@ -88,41 +97,64 @@ my-frontend          1          app.yourdomain.com
 ### Delete an app
 
 ```bash
-deployit delete <name>
+deployit delete <name> --host <hostname>
 ```
 
 ```bash
-deployit delete my-api
+deployit delete my-api --host api.yourdomain.com
 ✓ deleted my-api
+→ cloudflare: removed api.yourdomain.com from tunnel
 ```
+
+Always pass --host when deleting so the Cloudflare DNS record and tunnel route are cleaned up automatically. If you forget --host and the app is already deleted, use the cleanup command.
+
+### Clean up Cloudflare only
+
+If you deleted an app without --host and the DNS record is orphaned:
+
+```bash
+deployit cleanup --host api.yourdomain.com
+→ cloudflare: removed api.yourdomain.com from tunnel
+```
+
+This only touches Cloudflare — it does not affect the cluster.
 
 ## Framework detection
 
-deployit detects frameworks by looking for these files in order:
+deployit detects frameworks by looking for indicator files in this order:
 
 | File | Framework |
 |---|---|
-| `Dockerfile` | Custom (uses existing Dockerfile) |
-| `go.mod` | Go |
-| `package.json` | Node.js |
-| `Cargo.toml` | Rust |
-| `requirements.txt` / `pyproject.toml` | Python |
+| Dockerfile | Custom (uses existing Dockerfile) |
+| go.mod | Go |
+| package.json | Node.js |
+| Cargo.toml | Rust |
+| requirements.txt / pyproject.toml | Python |
 
-If a `Dockerfile` already exists in the project, it is used as-is. Otherwise deployit generates one automatically targeting `linux/arm64`.
+If a Dockerfile already exists it is used as-is. Otherwise deployit generates one automatically targeting linux/arm64. Adding support for a new framework is two files and about 10 lines of Go.
+
+## Commands
+
+| Command | Description |
+|---|---|
+| deploy | Build, push, deploy, configure DNS |
+| list | List all deployed apps |
+| delete | Delete app and clean up Cloudflare |
+| cleanup | Remove a hostname from Cloudflare only |
 
 ## Flags
 
 | Flag | Default | Description |
 |---|---|---|
-| `--host` | required | Hostname to deploy to |
-| `--registry` | `$DEPLOYIT_REGISTRY` | Container image registry |
-| `--replicas` | `1` | Number of pod replicas |
+| --host | required | Hostname to deploy to |
+| --registry | $DEPLOYIT_REGISTRY | Container image registry |
+| --replicas | 1 | Number of pod replicas |
 
 ## Architecture
 
-deployit is built on top of [webapp-operator](https://github.com/gappylul/webapp-operator) — a Kubernetes operator that watches `WebApp` custom resources and manages the underlying Deployment, Service, and Ingress automatically.
+deployit is built on top of webapp-operator, a Kubernetes operator that watches WebApp custom resources and manages the underlying Deployment, Service, and Ingress automatically.
 
-When you run `deployit deploy`, it creates a `WebApp` resource:
+When you run deployit deploy, it creates:
 
 ```yaml
 apiVersion: platform.gappy.hu/v1
@@ -136,14 +168,16 @@ spec:
   host: api.yourdomain.com
 ```
 
-The operator handles the rest. Deleting the `WebApp` cascades — all child resources are cleaned up automatically.
+The operator handles the rest. Deleting the WebApp cascades — all child resources are cleaned up automatically.
 
 ## Self-hosting
 
-deployit is designed for self-hosted Kubernetes clusters. It works with any cluster that has:
+The recommended setup:
 
-- Traefik as the ingress controller (k3s default)
-- [webapp-operator](https://github.com/gappylul/webapp-operator) installed
-- A container registry your cluster can pull from
+- Cluster: Raspberry Pi 5 running k3s
+- Ingress: Traefik (k3s default)
+- Operator: webapp-operator
+- Remote access: Tailscale — kubectl and deployit work from anywhere
+- Public access: Cloudflare Tunnel — no open ports required
 
-The easiest setup is a Raspberry Pi 5 running [k3s](https://k3s.io) with a [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) for external access.
+Total infrastructure cost: roughly 5 euros per month in electricity.

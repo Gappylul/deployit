@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gappylul/deployit/internal/cloudflare"
 	"github.com/gappylul/deployit/internal/deploy"
 	"github.com/spf13/cobra"
 )
@@ -19,12 +20,21 @@ var deleteCmd = &cobra.Command{
 		if err := deploy.Delete(ctx, name); err != nil {
 			return fmt.Errorf("delete: %w", err)
 		}
-
 		fmt.Printf("✓ deleted %s\n", name)
+
+		if deleteHost != "" {
+			cf, err := cloudflare.NewClient()
+			if err == nil {
+				cf.RemoveHostname(deleteHost)
+			}
+		}
 		return nil
 	},
 }
 
+var deleteHost string
+
 func init() {
+	deleteCmd.Flags().StringVar(&deleteHost, "host", "", "hostname to remove from Cloudflare tunnel")
 	rootCmd.AddCommand(deleteCmd)
 }

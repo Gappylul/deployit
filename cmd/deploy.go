@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/gappylul/deployit/internal/build"
+	"github.com/gappylul/deployit/internal/cloudflare"
 	"github.com/gappylul/deployit/internal/deploy"
 	"github.com/gappylul/deployit/internal/detect"
 	"github.com/gappylul/deployit/internal/dockerfile"
@@ -70,6 +71,16 @@ var deployCmd = &cobra.Command{
 		}
 
 		fmt.Printf("\n✓ deployed to http://%s\n", host)
+
+		cf, err := cloudflare.NewClient()
+		if err != nil {
+			fmt.Printf("⚠ skipping Cloudflare: %s\n", err)
+		} else {
+			if err := cf.AddHostname(host); err != nil {
+				fmt.Printf("⚠ Cloudflare error: %s\n", err)
+			}
+		}
+
 		return nil
 	},
 }
