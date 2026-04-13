@@ -3,7 +3,7 @@ module github.com/gappylul/deployit
 go 1.26
 
 require (
-	github.com/gappylul/webapp-operator v0.0.0-20260412163258-a4e3c6ae06db
+	github.com/gappylul/webapp-operator v0.0.0-20260413143617-c4006f2da41b
 	github.com/spf13/cobra v1.10.2
 	k8s.io/apimachinery v0.35.3
 	k8s.io/client-go v0.35.3

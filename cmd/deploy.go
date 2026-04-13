@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/gappylul/deployit/internal/build"
 	"github.com/gappylul/deployit/internal/cloudflare"
@@ -18,6 +22,7 @@ var (
 	host     string
 	replicas int32
 	registry string
+	envVars  []string
 )
 
 var deployCmd = &cobra.Command{
@@ -52,7 +57,8 @@ var deployCmd = &cobra.Command{
 		}
 
 		imageName := fmt.Sprintf("%s/%s", registry, name)
-		tag := "latest"
+		tag := fmt.Sprintf("%d", time.Now().Unix())
+		fullImage := fmt.Sprintf("%s:%s", imageName, tag)
 
 		if err := build.BuildAndPush(ctx, build.BuildOptions{
 			ContextPath: path,
@@ -62,11 +68,22 @@ var deployCmd = &cobra.Command{
 			return fmt.Errorf("build: %w", err)
 		}
 
-		fmt.Printf("-> pushed %s:%s\n", imageName, tag)
+		fmt.Printf("-> pushed %s\n", fullImage)
 
-		imageName = fmt.Sprintf("%s/%s", registry, name)
+		var parsedEnv []corev1.EnvVar
+		for _, e := range envVars {
+			parts := strings.SplitN(e, "=", 2)
+			if len(parts) != 2 {
+				return fmt.Errorf("invalid env var: %s (expected KEY=VALUE)", e)
+			}
+			parsedEnv = append(parsedEnv, corev1.EnvVar{
+				Name:  parts[0],
+				Value: parts[1],
+			})
+		}
+
 		fmt.Println("-> deploying to cluster")
-		if err := deploy.Deploy(ctx, name, imageName+":latest", host, replicas); err != nil {
+		if err := deploy.Deploy(ctx, name, fullImage, host, replicas, parsedEnv); err != nil {
 			return fmt.Errorf("deploy: %w", err)
 		}
 
@@ -91,6 +108,7 @@ func init() {
 	deployCmd.Flags().StringVar(&host, "host", "", "hostname to deploy to (required)")
 	deployCmd.Flags().Int32Var(&replicas, "replicas", 1, "number of replicas")
 	deployCmd.Flags().StringVar(&registry, "registry", defaultRegistry, "image registry e.g. ghcr.io/username (or set DEPLOYIT_REGISTRY)")
+	deployCmd.Flags().StringArrayVar(&envVars, "env", []string{}, "environment variables KEY=VALUE")
 	deployCmd.MarkFlagRequired("host")
 	if defaultRegistry == "" {
 		deployCmd.MarkFlagRequired("registry")

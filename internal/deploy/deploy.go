@@ -5,13 +5,14 @@ import (
 	"fmt"
 
 	platformv1 "github.com/gappylul/webapp-operator/api/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func Deploy(ctx context.Context, name, image, host string, replicas int32) error {
+func Deploy(ctx context.Context, name, image, host string, replicas int32, env []corev1.EnvVar) error {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		loadingRules, nil,
@@ -39,6 +40,7 @@ func Deploy(ctx context.Context, name, image, host string, replicas int32) error
 			Image:    image,
 			Replicas: &replicas,
 			Host:     host,
+			Env:      env,
 		},
 	}
 

@@ -53,7 +53,7 @@ func (c *Client) RemoveHostname(hostname string) error {
 	if err := c.removeDNSRecord(hostname); err != nil {
 		return fmt.Errorf("remove dns record: %w", err)
 	}
-	fmt.Printf("→ cloudflare: removed %s from tunnel\n", hostname)
+	fmt.Printf("-> cloudflare: removed %s from tunnel\n", hostname)
 	return nil
 }
 
