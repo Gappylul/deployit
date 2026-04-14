@@ -19,7 +19,7 @@ func Generate(framework detect.Framework) string {
 	}
 }
 
-var goDockerfile = `FROM --platform=linux/amd64 golang:1.22-alpine AS builder
+var goDockerfile = `FROM --platform=linux/amd64 golang:1.26-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum* .
 RUN go mod download

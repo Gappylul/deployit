@@ -42,7 +42,7 @@ func (c *Client) AddHostname(hostname string) error {
 	if err := c.addDNSRecord(hostname); err != nil {
 		return fmt.Errorf("add dns record: %w", err)
 	}
-	fmt.Printf("→ cloudflare: routed %s through tunnel\n", hostname)
+	fmt.Printf("-> cloudflare: routed %s through tunnel\n", hostname)
 	return nil
 }
 

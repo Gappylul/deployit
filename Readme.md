@@ -163,9 +163,12 @@ metadata:
   name: my-api
   namespace: default
 spec:
-  image: ghcr.io/your-username/my-api:latest
+  image: ghcr.io/your-username/my-api:git-sha
   replicas: 2
   host: api.yourdomain.com
+  env:
+    - name: HELLO
+    - value: "world" 
 ```
 
 The operator handles the rest. Deleting the WebApp cascades — all child resources are cleaned up automatically.

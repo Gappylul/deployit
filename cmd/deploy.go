@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -57,7 +57,7 @@ var deployCmd = &cobra.Command{
 		}
 
 		imageName := fmt.Sprintf("%s/%s", registry, name)
-		tag := fmt.Sprintf("%d", time.Now().Unix())
+		tag := gitShortSHA()
 		fullImage := fmt.Sprintf("%s:%s", imageName, tag)
 
 		if err := build.BuildAndPush(ctx, build.BuildOptions{
@@ -87,7 +87,7 @@ var deployCmd = &cobra.Command{
 			return fmt.Errorf("deploy: %w", err)
 		}
 
-		fmt.Printf("\n✓ deployed to http://%s\n", host)
+		fmt.Printf("\n✓ deployed to https://%s\n", host)
 
 		cf, err := cloudflare.NewClient()
 		if err != nil {
@@ -114,4 +114,12 @@ func init() {
 		deployCmd.MarkFlagRequired("registry")
 	}
 	rootCmd.AddCommand(deployCmd)
+}
+
+func gitShortSHA() string {
+	out, err := exec.Command("git", "rev-parse", "--short", "HEAD").Output()
+	if err != nil {
+		return "latest"
+	}
+	return strings.TrimSpace(string(out))
 }
