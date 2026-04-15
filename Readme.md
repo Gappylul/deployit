@@ -101,14 +101,6 @@ my-frontend          ● Progressing   0/1        app.yourdomain.com
 old-app              ● Error         0/1        old.yourdomain.com
 ```
 
-### Stream logs
-
-```bash
-deployit logs <name> [--tail <n>]
-```
-
-> Handles high-concurrency log streaming (up to 50 replicas) and automatically prefixes lines with the specific pod name for easier debugging.
-
 ### Delete an app
 
 ```bash
@@ -121,7 +113,32 @@ deployit delete my-api --host api.yourdomain.com
 → cloudflare: removed api.yourdomain.com from tunnel
 ```
 
-Always pass --host when deleting so the Cloudflare DNS record and tunnel route are cleaned up automatically. If you forget --host and the app is already deleted, use the cleanup command.
+Always pass `--host` when deleting so the Cloudflare DNS record and tunnel route are cleaned up automatically. If you forget `--host` and the app is already deleted, use the `cleanup` command.
+
+### Stream logs
+
+```bash
+deployit logs <name> [--tail <n>]
+```
+
+> Handles high-concurrency log streaming (up to 50 replicas) and automatically prefixes lines with the specific pod name for easier debugging.
+
+### Manage Secrets
+
+Manage environment variables securely without putting them in your Git history or YAML files. `deployit` creates a Kubernetes Secret and the operator automatically injects all keys as environment variables.
+
+```bash
+# List secrets for an app
+deployit secrets my-api
+
+# Add or update secrets (merges with existing)
+deployit secrets my-api DB_PASSWORD=pizza REDIS_URL=redis://10.42.0.5:6379
+
+# Update a secret and trigger a rolling restart
+deployit secrets my-api RESTART_KEY=1
+```
+
+> When you update a secret, the webapp-operator detects the change and automatically performs a rolling restart of your pods so the new values are picked up immediately.
 
 ### Clean up Cloudflare only
 
@@ -157,6 +174,7 @@ If a Dockerfile already exists it is used as-is. Otherwise deployit generates on
 | list    | List all deployed apps real-time status |
 | logs    | Stream real-time logs from your app     |
 | delete  | Delete app and clean up Cloudflare      |
+| secrets | List, set, or update app secrets        |
 | cleanup | Remove a hostname from Cloudflare only  |
 
 ## Flags
@@ -193,6 +211,9 @@ spec:
 > Uses Git SHA for versioning. If the repository is 'dirty' (uncommitted changes), a timestamp is appended to force a fresh pull on the cluster.
 
 The operator handles the rest. Deleting the WebApp cascades — all child resources are cleaned up automatically.
+
+**Environment** 
+> **Secret Injection:** The operator looks for a secret named `<app-name>-secrets`. If found, it adds an `envFrom` source to the Deployment. This means any key you add via `deployit secrets` is instantly available to your application code via standard environment variable lookups (e.g., `os.Getenv("DB_PASSWORD")`).
 
 ## Self-hosting
 
