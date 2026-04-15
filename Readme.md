@@ -95,9 +95,10 @@ deployit deploy ./my-api --host api.yourdomain.com --registry ghcr.io/your-usern
 ```bash
 deployit list
 
-NAME                 REPLICAS   HOST
-my-api               2          api.yourdomain.com
-my-frontend          1          app.yourdomain.com
+NAME                 STATUS          READY      HOST
+my-api               ● Running       2/2        api.yourdomain.com
+my-frontend          ● Progressing   0/1        app.yourdomain.com
+old-app              ● Error         0/1        old.yourdomain.com
 ```
 
 ### Stream logs
@@ -105,6 +106,8 @@ my-frontend          1          app.yourdomain.com
 ```bash
 deployit logs <name> --tail <n>
 ```
+
+> Handles high-concurrency log streaming (up to 50 replicas) and automatically prefixes lines with the specific pod name for easier debugging.
 
 ### Delete an app
 
@@ -148,13 +151,13 @@ If a Dockerfile already exists it is used as-is. Otherwise deployit generates on
 
 ## Commands
 
-| Command | Description                            |
-|---------|----------------------------------------|
-| deploy  | Build, push, deploy, configure DNS     |
-| list    | List all deployed apps                 |
-| logs    | Stream real-time logs from your app    |
-| delete  | Delete app and clean up Cloudflare     |
-| cleanup | Remove a hostname from Cloudflare only |
+| Command | Description                             |
+|---------|-----------------------------------------|
+| deploy  | Build, push, deploy, configure DNS      |
+| list    | List all deployed apps real-time status |
+| logs    | Stream real-time logs from your app     |
+| delete  | Delete app and clean up Cloudflare      |
+| cleanup | Remove a hostname from Cloudflare only  |
 
 ## Flags
 

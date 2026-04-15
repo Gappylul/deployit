@@ -21,6 +21,8 @@ var logsCmd = &cobra.Command{
 			"-l", fmt.Sprintf("app=%s", name),
 			"--all-containers",
 			"--tail", tailLines,
+			"--max-log-requests", "50",
+			"--prefix",
 		)
 
 		c.Stdout = os.Stdout
