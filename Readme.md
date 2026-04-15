@@ -104,7 +104,7 @@ old-app              ● Error         0/1        old.yourdomain.com
 ### Stream logs
 
 ```bash
-deployit logs <name> --tail <n>
+deployit logs <name> [--tail <n>]
 ```
 
 > Handles high-concurrency log streaming (up to 50 replicas) and automatically prefixes lines with the specific pod name for easier debugging.
