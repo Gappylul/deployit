@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -41,12 +42,21 @@ var deployCmd = &cobra.Command{
 		fmt.Printf("-> detected: %s\n", framework)
 
 		dockerfilePath := filepath.Join(path, "Dockerfile")
+		ignorePath := filepath.Join(path, ".dockerignore")
 		generated := false
 		if framework != detect.Custom {
 			content := dockerfile.Generate(framework)
 			if err := os.WriteFile(dockerfilePath, []byte(content), 0644); err != nil {
 				return fmt.Errorf("write dockerfile: %w", err)
 			}
+
+			ignoreContent := dockerfile.GenerateIgnore(framework)
+			if ignoreContent != "" {
+				if err := os.WriteFile(ignorePath, []byte(ignoreContent), 0644); err != nil {
+					return fmt.Errorf("write dockerignore: %w", err)
+				}
+			}
+
 			generated = true
 			fmt.Printf("-> generated Dockerfile for %s\n", framework)
 		} else {
@@ -54,6 +64,7 @@ var deployCmd = &cobra.Command{
 		}
 		if generated {
 			defer os.Remove(dockerfilePath)
+			defer os.Remove(ignorePath)
 		}
 
 		imageName := fmt.Sprintf("%s/%s", registry, name)
@@ -117,9 +128,16 @@ func init() {
 }
 
 func gitShortSHA() string {
-	out, err := exec.Command("git", "rev-parse", "--short", "HEAD").Output()
+	shaRaw, err := exec.Command("git", "rev-parse", "--short", "HEAD").Output()
 	if err != nil {
 		return "latest"
 	}
-	return strings.TrimSpace(string(out))
+	sha := strings.TrimSpace(string(shaRaw))
+
+	status, _ := exec.Command("git", "status", "--porcelain").Output()
+
+	if len(status) > 0 {
+		return fmt.Sprintf("%s-dirty-%d", sha, time.Now().Unix())
+	}
+	return sha
 }

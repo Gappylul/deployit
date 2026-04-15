@@ -8,6 +8,8 @@ func Generate(framework detect.Framework) string {
 	switch framework {
 	case detect.Go:
 		return goDockerfile
+	case detect.Vite:
+		return viteDockerfile
 	case detect.Node:
 		return nodeDockerfile
 	case detect.Rust:
@@ -36,7 +38,7 @@ CMD ["./server"]
 var nodeDockerfile = `FROM --platform=linux/amd64 node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json .
-RUN npm ci --production
+RUN npm install --omit=dev
 
 FROM --platform=linux/arm64 node:20-alpine
 WORKDIR /app
@@ -44,6 +46,28 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY . .
 EXPOSE 8080
 CMD ["node", "index.js"]
+`
+
+var viteDockerfile = `FROM --platform=linux/amd64 node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+FROM --platform=linux/arm64 node:20-alpine
+RUN npm install -g sirv-cli
+WORKDIR /app
+COPY --from=builder /app/dist .
+EXPOSE 8080
+CMD ["sirv", ".", "--single", "--port", "8080", "--host", "0.0.0.0"]
+`
+
+var nodeDockerIgnoreContent = `node_modules
+.git
+npm-debug.log
+Dockerfile
+.dockerignore
 `
 
 var rustDockerfile = `FROM --platform=linux/amd64 rust:alpine AS builder
@@ -67,3 +91,14 @@ COPY . .
 EXPOSE 8080
 CMD ["python", "main.py"]
 `
+
+func GenerateIgnore(framework detect.Framework) string {
+	switch framework {
+	case detect.Vite:
+		return nodeDockerIgnoreContent
+	case detect.Node:
+		return nodeDockerIgnoreContent
+	default:
+		return ""
+	}
+}

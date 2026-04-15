@@ -10,6 +10,7 @@ type Framework string
 const (
 	Go      Framework = "go"
 	Node    Framework = "node"
+	Vite    Framework = "vite"
 	Rust    Framework = "rust"
 	Python  Framework = "python"
 	Custom  Framework = "custom"
@@ -22,6 +23,9 @@ func Detect(path string) Framework {
 	}
 	if exists(path, "go.mod") {
 		return Go
+	}
+	if exists(path, "vite.config.js") {
+		return Vite
 	}
 	if exists(path, "package.json") {
 		return Node

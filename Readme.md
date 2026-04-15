@@ -13,7 +13,7 @@ Detects your framework, builds an arm64 Docker image, pushes it to your containe
 ```
 deployit deploy ./my-project
         ↓
-detects framework (Go, Node, Rust, Python, or custom Dockerfile)
+detects framework (Go, Node, Vite, Rust, Python, or custom Dockerfile)
         ↓
 generates Dockerfile if needed
         ↓
@@ -43,6 +43,12 @@ git clone https://github.com/gappylul/deployit
 cd deployit
 go build -o deployit .
 sudo mv deployit /usr/local/bin/deployit
+```
+
+**or**
+
+```sh
+go install github.com/gappylul/deployit@latest
 ```
 
 ## Setup
@@ -123,32 +129,34 @@ This only touches Cloudflare — it does not affect the cluster.
 
 deployit detects frameworks by looking for indicator files in this order:
 
-| File | Framework |
-|---|---|
-| Dockerfile | Custom (uses existing Dockerfile) |
-| go.mod | Go |
-| package.json | Node.js |
-| Cargo.toml | Rust |
-| requirements.txt / pyproject.toml | Python |
+| File                              | Framework                         |
+|-----------------------------------|-----------------------------------|
+| Dockerfile                        | Custom (uses existing Dockerfile) |
+| vite.config.js / vite.config.ts   | Vite (React, Vue, etc.)           |
+| go.mod                            | Go                                |
+| package.json                      | Node.js                           |
+| Cargo.toml                        | Rust                              |
+| requirements.txt / pyproject.toml | Python                            |
 
 If a Dockerfile already exists it is used as-is. Otherwise deployit generates one automatically targeting linux/arm64. Adding support for a new framework is two files and about 10 lines of Go.
 
 ## Commands
 
-| Command | Description |
-|---|---|
-| deploy | Build, push, deploy, configure DNS |
-| list | List all deployed apps |
-| delete | Delete app and clean up Cloudflare |
+| Command | Description                            |
+|---------|----------------------------------------|
+| deploy  | Build, push, deploy, configure DNS     |
+| list    | List all deployed apps                 |
+| delete  | Delete app and clean up Cloudflare     |
 | cleanup | Remove a hostname from Cloudflare only |
 
 ## Flags
 
-| Flag | Default | Description |
-|---|---|---|
-| --host | required | Hostname to deploy to |
+| Flag       | Default            | Description              |
+|------------|--------------------|--------------------------|
+| --host     | required           | Hostname to deploy to    |
 | --registry | $DEPLOYIT_REGISTRY | Container image registry |
-| --replicas | 1 | Number of pod replicas |
+| --replicas | 1                  | Number of pod replicas   |
+| --env      | none               | Environment variables    |
 
 ## Architecture
 
@@ -168,8 +176,10 @@ spec:
   host: api.yourdomain.com
   env:
     - name: HELLO
-    - value: "world" 
+      value: "world" 
 ```
+
+> Uses Git SHA for versioning. If the repository is 'dirty' (uncommitted changes), a timestamp is appended to force a fresh pull on the cluster.
 
 The operator handles the rest. Deleting the WebApp cascades — all child resources are cleaned up automatically.
 
