@@ -47,7 +47,7 @@ sudo mv deployit /usr/local/bin/deployit
 
 **or**
 
-```sh
+```bash
 go install github.com/gappylul/deployit@latest
 ```
 
@@ -100,6 +100,12 @@ my-api               2          api.yourdomain.com
 my-frontend          1          app.yourdomain.com
 ```
 
+### Stream logs
+
+```bash
+deployit logs <name> --tail <n>
+```
+
 ### Delete an app
 
 ```bash
@@ -146,17 +152,19 @@ If a Dockerfile already exists it is used as-is. Otherwise deployit generates on
 |---------|----------------------------------------|
 | deploy  | Build, push, deploy, configure DNS     |
 | list    | List all deployed apps                 |
+| logs    | Stream real-time logs from your app    |
 | delete  | Delete app and clean up Cloudflare     |
 | cleanup | Remove a hostname from Cloudflare only |
 
 ## Flags
 
-| Flag       | Default            | Description              |
-|------------|--------------------|--------------------------|
-| --host     | required           | Hostname to deploy to    |
-| --registry | $DEPLOYIT_REGISTRY | Container image registry |
-| --replicas | 1                  | Number of pod replicas   |
-| --env      | none               | Environment variables    |
+| Flag       | Default            | Description               |
+|------------|--------------------|---------------------------|
+| --host     | required           | Hostname to deploy to     |
+| --registry | $DEPLOYIT_REGISTRY | Container image registry  |
+| --replicas | 1                  | Number of pod replicas    |
+| --env      | none               | Environment variables     |
+| --tail     | 100                | Number of lines to show   |
 
 ## Architecture
 
