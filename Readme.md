@@ -111,6 +111,22 @@ my-frontend          ● Progressing   0/1        app.yourdomain.com
 old-app              ● Error         0/1        old.yourdomain.com
 ```
 
+### See status of services
+
+Example:
+```bash
+deployit services goshort
+
+STATUS REPORT: goshort
+
+COMPUTE (Pods)                      STATE     RESTARTS/CAP
+--------------                      -----     ------------
+[+] redis-goshort-d664fb97b-6f2dl   Running    0
+
+STORAGE (Volumes)                  
+[+] redis-data-goshort              Bound      500Mi
+```
+
 ### Delete an app
 
 ```bash
