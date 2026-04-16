@@ -233,6 +233,16 @@ The operator handles the rest. Deleting the WebApp cascades — all child resour
 **Environment** 
 > **Secret Injection:** The operator looks for a secret named `<app-name>-secrets`. If found, it adds an `envFrom` source to the Deployment. This means any key you add via `deployit secrets` is instantly available to your application code via standard environment variable lookups (e.g., `os.Getenv("DB_PASSWORD")`).
 
+
+## Smart Persistence
+
+When you deploy with extensions like `--with redis`, `deployit` automates the boring data stuff:
+
+- **Durable Storage**: Automatically creates a **PersistentVolumeClaim (PVC)**.
+- **SD-Card Friendly**: Uses `local-path` provisioning—it only consumes the actual bytes you write (pay-as-you-grow).
+- **Crash Proof**: Forces `--appendonly yes` so your data survives power cuts or Pod restarts.
+- **Auto-Wiring**: Connection strings (like `REDIS_URL`) are injected directly into your app's secrets.
+
 ## Self-hosting
 
 The recommended setup:
