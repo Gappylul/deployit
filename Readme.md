@@ -90,6 +90,16 @@ deployit deploy ./my-api --host api.yourdomain.com --replicas 3
 deployit deploy ./my-api --host api.yourdomain.com --registry ghcr.io/your-username
 ```
 
+### Deploy with Extensions (Databases)
+
+`deployit` can automatically provision dedicated infrastructure for your app.
+> Extension instances are completely isolated per-project and come pre-configured with the necessary connection strings automatically injected into your secrets.
+
+```bash
+# Deploy with a dedicated, isolated Redis instance
+deployit deploy ./my-app --host app.yourdomain.com --with redis
+```
+
 ### List deployed apps
 
 ```bash
@@ -136,6 +146,9 @@ deployit secrets my-api DB_PASSWORD=pizza REDIS_URL=redis://10.42.0.5:6379
 
 # Update a secret and trigger a rolling restart
 deployit secrets my-api RESTART_KEY=1
+
+# Delete a secret
+deployit secrets delete my-api RESTART_KEY
 ```
 
 > When you update a secret, the webapp-operator detects the change and automatically performs a rolling restart of your pods so the new values are picked up immediately.
@@ -155,37 +168,42 @@ This only touches Cloudflare — it does not affect the cluster.
 
 deployit detects frameworks by looking for indicator files in this order:
 
-| File                              | Framework                         |
-|-----------------------------------|-----------------------------------|
-| Dockerfile                        | Custom (uses existing Dockerfile) |
-| vite.config.js / vite.config.ts   | Vite (React, Vue, etc.)           |
-| go.mod                            | Go                                |
-| package.json                      | Node.js                           |
-| Cargo.toml                        | Rust                              |
-| requirements.txt / pyproject.toml | Python                            |
+| File                                   | Framework                         |
+|----------------------------------------|-----------------------------------|
+| Dockerfile                             | Custom (uses existing Dockerfile) |
+| vite.config.js / vite.config.ts        | Vite (React, Vue, etc.)           |
+| go.mod                                 | Go                                |
+| bun.lock (bun install --lockfile-only) | Bun                               |
+| tsconfig.json                          | Node.ts                           |
+| package.json                           | Node.js                           |
+| Cargo.toml                             | Rust                              |
+| requirements.txt / pyproject.toml      | Python                            |
 
 If a Dockerfile already exists it is used as-is. Otherwise deployit generates one automatically targeting linux/arm64. Adding support for a new framework is two files and about 10 lines of Go.
 
 ## Commands
 
-| Command | Description                             |
-|---------|-----------------------------------------|
-| deploy  | Build, push, deploy, configure DNS      |
-| list    | List all deployed apps real-time status |
-| logs    | Stream real-time logs from your app     |
-| delete  | Delete app and clean up Cloudflare      |
-| secrets | List, set, or update app secrets        |
-| cleanup | Remove a hostname from Cloudflare only  |
+| Command    | Description                                                |
+|------------|------------------------------------------------------------|
+| deploy     | Build, push, deploy, configure DNS                         |
+| list       | List all deployed apps real-time status                    |
+| logs       | Stream real-time logs from your app                        |
+| services   | Show attached services (like redis) for an app             |
+| delete     | Delete app and clean up Cloudflare                         |
+| secrets    | List, set, or update app secrets                           |
+| cleanup    | Remove a hostname from Cloudflare only                     |
+| completion | Generate the autocompletion script for the specified shell |
 
 ## Flags
 
-| Flag       | Default            | Description               |
-|------------|--------------------|---------------------------|
-| --host     | required           | Hostname to deploy to     |
-| --registry | $DEPLOYIT_REGISTRY | Container image registry  |
-| --replicas | 1                  | Number of pod replicas    |
-| --env      | none               | Environment variables     |
-| --tail     | 100                | Number of lines to show   |
+| Flag       | Default            | Description                  |
+|------------|--------------------|------------------------------|
+| --host     | required           | Hostname to deploy to        |
+| --registry | $DEPLOYIT_REGISTRY | Container image registry     |
+| --replicas | 1                  | Number of pod replicas       |
+| --env      | none               | Environment variables        |
+| --with     | none               | Add extensions (e.g., redis) |
+| --tail     | 100                | Number of lines to show      |
 
 ## Architecture
 

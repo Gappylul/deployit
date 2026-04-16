@@ -9,7 +9,9 @@ type Framework string
 
 const (
 	Go      Framework = "go"
-	Node    Framework = "node"
+	NodeJs  Framework = "nodeJs"
+	NodeTs  Framework = "nodeTs"
+	Bun     Framework = "bun"
 	Vite    Framework = "vite"
 	Rust    Framework = "rust"
 	Python  Framework = "python"
@@ -27,8 +29,14 @@ func Detect(path string) Framework {
 	if exists(path, "vite.config.js") {
 		return Vite
 	}
+	if exists(path, "bun.lock") {
+		return Bun
+	}
+	if exists(path, "tsconfig.json") {
+		return NodeTs
+	}
 	if exists(path, "package.json") {
-		return Node
+		return NodeJs
 	}
 	if exists(path, "Cargo.toml") {
 		return Rust

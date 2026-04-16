@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gappylul/deployit/internal/provision"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/gappylul/deployit/internal/build"
@@ -24,6 +25,7 @@ var (
 	replicas int32
 	registry string
 	envVars  []string
+	withExt  []string
 )
 
 var deployCmd = &cobra.Command{
@@ -93,6 +95,21 @@ var deployCmd = &cobra.Command{
 			})
 		}
 
+		k8sClient, err := deploy.GetClientset()
+		if err != nil {
+			return fmt.Errorf("failed to get k8s client: %w", err)
+		}
+
+		for _, ext := range withExt {
+			switch ext {
+			case "redis":
+				fmt.Printf("-> provisioning attached redis for %s (updating secrets)...\n", name)
+				if err := provision.EnsureRedis(ctx, k8sClient, "default", name); err != nil {
+					return fmt.Errorf("redis provision failed: %w", err)
+				}
+			}
+		}
+
 		fmt.Println("-> deploying to cluster")
 		if err := deploy.Deploy(ctx, name, fullImage, host, replicas, parsedEnv); err != nil {
 			return fmt.Errorf("deploy: %w", err)
@@ -120,6 +137,7 @@ func init() {
 	deployCmd.Flags().Int32Var(&replicas, "replicas", 1, "number of replicas")
 	deployCmd.Flags().StringVar(&registry, "registry", defaultRegistry, "image registry e.g. ghcr.io/username (or set DEPLOYIT_REGISTRY)")
 	deployCmd.Flags().StringArrayVar(&envVars, "env", []string{}, "environment variables KEY=VALUE")
+	deployCmd.Flags().StringSliceVar(&withExt, "with", []string{}, "add extensions (e.g., redis)")
 	deployCmd.MarkFlagRequired("host")
 	if defaultRegistry == "" {
 		deployCmd.MarkFlagRequired("registry")
