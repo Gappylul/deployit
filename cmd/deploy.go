@@ -107,6 +107,17 @@ var deployCmd = &cobra.Command{
 				if err := provision.EnsureRedis(ctx, k8sClient, "default", name); err != nil {
 					return fmt.Errorf("redis provision failed: %w", err)
 				}
+			case "postgres":
+				fmt.Printf("-> provisioning attached postgres for %s (updating secrets)...\n", name)
+				dbURL, err := provision.EnsurePostgres(ctx, k8sClient, "default", name)
+				if err != nil {
+					return fmt.Errorf("postgres provision failed: %w", err)
+				}
+				parsedEnv = append(parsedEnv, corev1.EnvVar{
+					Name:  "DATABASE_URL",
+					Value: dbURL,
+				})
+				fmt.Println("-> injected DATABASE_URL")
 			}
 		}
 
@@ -137,7 +148,7 @@ func init() {
 	deployCmd.Flags().Int32Var(&replicas, "replicas", 1, "number of replicas")
 	deployCmd.Flags().StringVar(&registry, "registry", defaultRegistry, "image registry e.g. ghcr.io/username (or set DEPLOYIT_REGISTRY)")
 	deployCmd.Flags().StringArrayVar(&envVars, "env", []string{}, "environment variables KEY=VALUE")
-	deployCmd.Flags().StringSliceVar(&withExt, "with", []string{}, "add extensions (e.g., redis)")
+	deployCmd.Flags().StringSliceVar(&withExt, "with", []string{}, "add extensions (postgres, redis)")
 	deployCmd.MarkFlagRequired("host")
 	if defaultRegistry == "" {
 		deployCmd.MarkFlagRequired("registry")

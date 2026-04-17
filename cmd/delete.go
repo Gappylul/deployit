@@ -17,15 +17,24 @@ var deleteCmd = &cobra.Command{
 		ctx := context.Background()
 		name := args[0]
 
+		var hostToDelete string
+		if deleteHost != "" {
+			hostToDelete = deleteHost
+		}
+
 		if err := deploy.Delete(ctx, name); err != nil {
 			return fmt.Errorf("delete: %w", err)
 		}
 		fmt.Printf("✓ deleted %s\n", name)
 
-		if deleteHost != "" {
+		if hostToDelete != "" {
 			cf, err := cloudflare.NewClient()
 			if err == nil {
-				cf.RemoveHostname(deleteHost)
+				fmt.Printf("   Removing Cloudflare record for %s...\n", hostToDelete)
+				err := cf.RemoveHostname(hostToDelete)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		return nil

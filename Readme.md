@@ -121,6 +121,7 @@ STATUS REPORT: goshort
 
 COMPUTE (Pods)                      STATE     RESTARTS/CAP
 --------------                      -----     ------------
+[+] goshort-7db4b9967-vvt2p         Running    0
 [+] redis-goshort-d664fb97b-6f2dl   Running    0
 
 STORAGE (Volumes)                  
@@ -140,6 +141,8 @@ deployit delete my-api --host api.yourdomain.com
 ```
 
 Always pass `--host` when deleting so the Cloudflare DNS record and tunnel route are cleaned up automatically. If you forget `--host` and the app is already deleted, use the `cleanup` command.
+
+> Automatically deletes the extensions connected to the deployed app.
 
 ### Stream logs
 
@@ -212,14 +215,14 @@ If a Dockerfile already exists it is used as-is. Otherwise deployit generates on
 
 ## Flags
 
-| Flag       | Default            | Description                  |
-|------------|--------------------|------------------------------|
-| --host     | required           | Hostname to deploy to        |
-| --registry | $DEPLOYIT_REGISTRY | Container image registry     |
-| --replicas | 1                  | Number of pod replicas       |
-| --env      | none               | Environment variables        |
-| --with     | none               | Add extensions (e.g., redis) |
-| --tail     | 100                | Number of lines to show      |
+| Flag       | Default            | Description                      |
+|------------|--------------------|----------------------------------|
+| --host     | required           | Hostname to deploy to            |
+| --registry | $DEPLOYIT_REGISTRY | Container image registry         |
+| --replicas | 1                  | Number of pod replicas           |
+| --env      | none               | Environment variables            |
+| --with     | none               | Add extensions (postgres, redis) |
+| --tail     | 100                | Number of lines to show          |
 
 ## Architecture
 
@@ -252,12 +255,12 @@ The operator handles the rest. Deleting the WebApp cascades — all child resour
 
 ## Smart Persistence
 
-When you deploy with extensions like `--with redis`, `deployit` automates the boring data stuff:
+When you deploy with extensions like `--with postgres/redis`, `deployit` automates the boring data stuff:
 
 - **Durable Storage**: Automatically creates a **PersistentVolumeClaim (PVC)**.
 - **SD-Card Friendly**: Uses `local-path` provisioning—it only consumes the actual bytes you write (pay-as-you-grow).
 - **Crash Proof**: Forces `--appendonly yes` so your data survives power cuts or Pod restarts.
-- **Auto-Wiring**: Connection strings (like `REDIS_URL`) are injected directly into your app's secrets.
+- **Auto-Wiring**: Connection strings (like `REDIS_URL`, `DATABASE_URL`) are injected directly into your app's secrets.
 
 ## Self-hosting
 
