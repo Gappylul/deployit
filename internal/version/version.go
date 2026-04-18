@@ -3,10 +3,12 @@ package version
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 )
 
-const CurrentVersion = "v1.0.0"
+const CurrentVersion = "v1.1.0"
 const RepoURL = "https://api.github.com/repos/gappylul/deployit/releases/latest"
 
 type GithubRelease struct {
@@ -26,8 +28,26 @@ func CheckForUpdate() string {
 		return ""
 	}
 
-	if release.TagName != CurrentVersion {
+	if isNewer(release.TagName, CurrentVersion) {
 		return release.TagName
 	}
 	return ""
+}
+
+func isNewer(remote, local string) bool {
+	remoteParts := strings.Split(strings.TrimPrefix(remote, "v"), ".")
+	localParts := strings.Split(strings.TrimPrefix(local, "v"), ".")
+
+	for i := 0; i < len(remoteParts) && i < len(localParts); i++ {
+		rNum, _ := strconv.Atoi(remoteParts[i])
+		lNum, _ := strconv.Atoi(localParts[i])
+
+		if rNum > lNum {
+			return true
+		}
+		if rNum < lNum {
+			return false
+		}
+	}
+	return len(remoteParts) > len(localParts)
 }

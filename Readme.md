@@ -197,6 +197,13 @@ deployit cleanup --host api.yourdomain.com
 → cloudflare: removed api.yourdomain.com from tunnel
 ```
 
+#### Check current version of `deployit`
+
+```bash
+deployit version
+deployit v1.x.x
+```
+
 This only touches Cloudflare — it does not affect the cluster.
 
 ### Framework detection

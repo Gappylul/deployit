@@ -12,11 +12,11 @@ var setupDomain string
 
 var setupCmd = &cobra.Command{
 	Use:   "setup",
-	Short: "Prepare the cluster for Gappy Cloud",
+	Short: "Prepare the cluster for the Cloud",
 	Long:  `Installs the WebApp Custom Resource Definitions, RBAC permissions, and the webapp-operator manager.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if setupDomain == "" {
-			return fmt.Errorf("domain is required. Example: --domain gappy.hu")
+			return fmt.Errorf("domain is required. Example: --domain yourdomain.com")
 		}
 
 		config := bootstrap.SetupConfig{
