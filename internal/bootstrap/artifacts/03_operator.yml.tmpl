@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-operator
+  namespace: deployit-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp-operator
+  template:
+    metadata:
+      labels:
+        app: webapp-operator
+    spec:
+      serviceAccountName: webapp-operator
+      containers:
+        - name: manager
+          image: ghcr.io/gappylul/webapp-operator:latest
+          env:
+            - name: CLUSTER_DOMAIN
+              value: "{{ .Domain }}"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"

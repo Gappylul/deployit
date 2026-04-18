@@ -8,7 +8,7 @@ deployit deploy ./my-project --host myapp.yourdomain.com
 
 Detects your framework, builds an arm64 Docker image, pushes it to your container registry, deploys it to your cluster, and configures Cloudflare DNS automatically. No YAML, no Dockerfile, no dashboard clicks required.
 
-## How it works
+### How it works
 
 ```
 deployit deploy ./my-project
@@ -28,15 +28,14 @@ Cloudflare tunnel route added + DNS CNAME created
 https://myapp.yourdomain.com is live
 ```
 
-## Requirements
+### Requirements
 
 - Docker Desktop running locally
 - kubectl configured and pointing at your cluster (~/.kube/config)
-- webapp-operator installed on the cluster
 - Logged into your container registry
 - A Cloudflare tunnel set up for your domain
 
-## Installation
+### Installation
 
 ```bash
 git clone https://github.com/gappylul/deployit
@@ -51,9 +50,18 @@ sudo mv deployit /usr/local/bin/deployit
 go install github.com/gappylul/deployit@latest
 ```
 
-## Setup
+### Setup
 
-Store secrets in a dedicated file:
+#### 1. Bootstrap the Cluster
+
+First, prepare your Kubernetes cluster with the Cloud control plane. This installs the `webapp-operator` and necessary CRDs automatically.
+```bash
+deployit setup --domain yourdomain.com
+```
+
+#### 2. Store secrets in a dedicated file:
+
+`Deployit` uses [ghcr.io](https://ghcr.io), you will need to run docker login ghcr.io first.
 
 ```bash
 cat > ~/.secrets << 'SECRETS'
@@ -76,9 +84,17 @@ Cloudflare API token permissions required:
 
 If Cloudflare env vars are not set, deployit will skip DNS automation and warn you rather than failing.
 
-## Usage
+### Updates
+`deployit` automatically checks for new versions in the background. If a new release is available on GitHub, you'll see a notification after your command finishes.
 
-### Deploy a project
+To update manually:
+```bash
+go install github.com/gappylul/deployit@latest
+```
+
+### Usage
+
+#### Deploy a project
 
 ```bash
 deployit deploy <path> --host <hostname> [--replicas <n>] [--registry <registry>]
@@ -90,7 +106,7 @@ deployit deploy ./my-api --host api.yourdomain.com --replicas 3
 deployit deploy ./my-api --host api.yourdomain.com --registry ghcr.io/your-username
 ```
 
-### Deploy with Extensions (Databases)
+#### Deploy with Extensions (Databases)
 
 `deployit` can automatically provision dedicated infrastructure for your app.
 > Extension instances are completely isolated per-project and come pre-configured with the necessary connection strings automatically injected into your secrets.
@@ -100,7 +116,7 @@ deployit deploy ./my-api --host api.yourdomain.com --registry ghcr.io/your-usern
 deployit deploy ./my-app --host app.yourdomain.com --with redis
 ```
 
-### List deployed apps
+#### List deployed apps
 
 ```bash
 deployit list
@@ -111,7 +127,7 @@ my-frontend          ● Progressing   0/1        app.yourdomain.com
 old-app              ● Error         0/1        old.yourdomain.com
 ```
 
-### See status of services
+#### See status of services
 
 Example:
 ```bash
@@ -128,7 +144,7 @@ STORAGE (Volumes)
 [+] redis-data-goshort              Bound      500Mi
 ```
 
-### Delete an app
+#### Delete an app
 
 ```bash
 deployit delete <name> --host <hostname>
@@ -144,7 +160,7 @@ Always pass `--host` when deleting so the Cloudflare DNS record and tunnel route
 
 > Automatically deletes the extensions connected to the deployed app.
 
-### Stream logs
+#### Stream logs
 
 ```bash
 deployit logs <name> [--tail <n>]
@@ -152,7 +168,7 @@ deployit logs <name> [--tail <n>]
 
 > Handles high-concurrency log streaming (up to 50 replicas) and automatically prefixes lines with the specific pod name for easier debugging.
 
-### Manage Secrets
+#### Manage Secrets
 
 Manage environment variables securely without putting them in your Git history or YAML files. `deployit` creates a Kubernetes Secret and the operator automatically injects all keys as environment variables.
 
@@ -172,7 +188,7 @@ deployit secrets delete my-api RESTART_KEY
 
 > When you update a secret, the webapp-operator detects the change and automatically performs a rolling restart of your pods so the new values are picked up immediately.
 
-### Clean up Cloudflare only
+#### Clean up Cloudflare only
 
 If you deleted an app without --host and the DNS record is orphaned:
 
@@ -183,7 +199,7 @@ deployit cleanup --host api.yourdomain.com
 
 This only touches Cloudflare — it does not affect the cluster.
 
-## Framework detection
+### Framework detection
 
 deployit detects frameworks by looking for indicator files in this order:
 
@@ -200,7 +216,7 @@ deployit detects frameworks by looking for indicator files in this order:
 
 If a Dockerfile already exists it is used as-is. Otherwise deployit generates one automatically targeting linux/arm64. Adding support for a new framework is two files and about 10 lines of Go.
 
-## Commands
+### Commands
 
 | Command    | Description                                                |
 |------------|------------------------------------------------------------|
@@ -213,7 +229,7 @@ If a Dockerfile already exists it is used as-is. Otherwise deployit generates on
 | cleanup    | Remove a hostname from Cloudflare only                     |
 | completion | Generate the autocompletion script for the specified shell |
 
-## Flags
+### Flags
 
 | Flag       | Default            | Description                      |
 |------------|--------------------|----------------------------------|
@@ -224,7 +240,7 @@ If a Dockerfile already exists it is used as-is. Otherwise deployit generates on
 | --with     | none               | Add extensions (postgres, redis) |
 | --tail     | 100                | Number of lines to show          |
 
-## Architecture
+### Architecture
 
 deployit is built on top of webapp-operator, a Kubernetes operator that watches WebApp custom resources and manages the underlying Deployment, Service, and Ingress automatically.
 
@@ -249,11 +265,14 @@ spec:
 
 The operator handles the rest. Deleting the WebApp cascades — all child resources are cleaned up automatically.
 
+**Self-Contained Control Plane**
+> deployit is a **Zero-Dependency** binary. The Kubernetes manifests, RBAC roles, and the `webapp-operator` deployment are all embedded directly into the Go binary using `//go:embed`. You can install the entire platform on a fresh cluster without ever cloning a repository or writing a single line of YAML.
+
 **Environment** 
 > **Secret Injection:** The operator looks for a secret named `<app-name>-secrets`. If found, it adds an `envFrom` source to the Deployment. This means any key you add via `deployit secrets` is instantly available to your application code via standard environment variable lookups (e.g., `os.Getenv("DB_PASSWORD")`).
 
 
-## Smart Persistence
+### Smart Persistence
 
 When you deploy with extensions like `--with postgres/redis`, `deployit` automates the boring data stuff:
 
@@ -262,7 +281,7 @@ When you deploy with extensions like `--with postgres/redis`, `deployit` automat
 - **Crash Proof**: Forces `--appendonly yes` so your data survives power cuts or Pod restarts.
 - **Auto-Wiring**: Connection strings (like `REDIS_URL`, `DATABASE_URL`) are injected directly into your app's secrets.
 
-## Self-hosting
+### Self-hosting
 
 The recommended setup:
 
