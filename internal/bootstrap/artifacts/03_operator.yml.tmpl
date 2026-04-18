@@ -16,7 +16,8 @@ spec:
       serviceAccountName: webapp-operator
       containers:
         - name: manager
-          image: ghcr.io/gappylul/webapp-operator:latest
+          image: ghcr.io/gappylul/webapp-operator:{{ .OperatorVersion }}
+          imagePullPolicy: Always
           env:
             - name: CLUSTER_DOMAIN
               value: "{{ .Domain }}"

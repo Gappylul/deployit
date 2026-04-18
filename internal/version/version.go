@@ -8,7 +8,8 @@ import (
 	"time"
 )
 
-const CurrentVersion = "v1.1.0"
+var CurrentVersion = "v1.2.0"
+
 const RepoURL = "https://api.github.com/repos/gappylul/deployit/releases/latest"
 
 type GithubRelease struct {

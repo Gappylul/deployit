@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/gappylul/deployit/internal/bootstrap"
+	"github.com/gappylul/deployit/internal/version"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +21,8 @@ var setupCmd = &cobra.Command{
 		}
 
 		config := bootstrap.SetupConfig{
-			Domain: setupDomain,
+			Domain:          setupDomain,
+			OperatorVersion: version.CurrentVersion,
 		}
 
 		ctx := context.Background()

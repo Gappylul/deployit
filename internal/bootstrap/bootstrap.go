@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"sort"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,6 +16,8 @@ import (
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -23,7 +26,8 @@ import (
 var artifacts embed.FS
 
 type SetupConfig struct {
-	Domain string
+	Domain          string
+	OperatorVersion string
 }
 
 func RunSetup(ctx context.Context, cfg SetupConfig) error {
@@ -64,6 +68,11 @@ func RunSetup(ctx context.Context, cfg SetupConfig) error {
 			}
 		}
 	}
+
+	fmt.Println("Refreshing operator to pick up new permissions...")
+	if err := restartOperator(ctx, kubeConfig); err != nil {
+		return fmt.Errorf("failed to restart operator: %w", err)
+	}
 	return nil
 }
 
@@ -91,5 +100,27 @@ func applyResource(ctx context.Context, dc dynamic.Interface, mapper meta.RESTMa
 		FieldManager: "deployit-bootstrap",
 		Force:        true,
 	})
+	return err
+}
+
+func restartOperator(ctx context.Context, kubeConfig *rest.Config) error {
+	clientset, err := kubernetes.NewForConfig(kubeConfig)
+	if err != nil {
+		return err
+	}
+
+	deployment, err := clientset.AppsV1().Deployments("deployit-system").Get(ctx, "webapp-operator", metav1.GetOptions{})
+	if err != nil {
+		return nil
+	}
+
+	latest := deployment.DeepCopy()
+	if latest.Spec.Template.Annotations == nil {
+		latest.Spec.Template.Annotations = make(map[string]string)
+	}
+
+	latest.Spec.Template.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().Format(time.RFC3339)
+
+	_, err = clientset.AppsV1().Deployments("deployit-system").Update(ctx, latest, metav1.UpdateOptions{})
 	return err
 }
