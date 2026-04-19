@@ -68,7 +68,7 @@ type ingressRule struct {
 	Service  string `json:"service"`
 }
 
-func (c *Client) getTunnelConfig() ([]ingressRule, error) {
+func (c *Client) GetTunnelConfig() ([]ingressRule, error) {
 	url := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/cfd_tunnel/%s/configurations",
 		c.accountID, c.tunnelID)
 
@@ -119,7 +119,7 @@ func (c *Client) putTunnelConfig(ingress []ingressRule) error {
 }
 
 func (c *Client) addTunnelRoute(hostname string) error {
-	ingress, err := c.getTunnelConfig()
+	ingress, err := c.GetTunnelConfig()
 	if err != nil {
 		return err
 	}
@@ -149,7 +149,7 @@ func (c *Client) addTunnelRoute(hostname string) error {
 }
 
 func (c *Client) removeTunnelRoute(hostname string) error {
-	ingress, err := c.getTunnelConfig()
+	ingress, err := c.GetTunnelConfig()
 	if err != nil {
 		return err
 	}

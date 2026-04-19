@@ -127,9 +127,24 @@ my-frontend          ● Progressing   0/1        app.yourdomain.com
 old-app              ● Error         0/1        old.yourdomain.com
 ```
 
+#### See status of apps
+
+```bash
+deployit status goshort            
+Checking Cloudflare Tunnel for goshort...
+-> Cloudflare: Traffic is correctly routed to the tunnel.
+
+--- [ STATUS: goshort ] ---
+PODS:
+  goshort-869455f6cb-z9w5n                 [Running]
+
+RECENT EVENTS:
+  [14:08.02] Synced          All resources reconciled successfully
+  [14:08.02] ScalingReplicaSet Scaled down replica set goshort-869455f6cb from 2 to 1
+```
+
 #### See status of services
 
-Example:
 ```bash
 deployit services goshort
 
@@ -142,6 +157,16 @@ COMPUTE (Pods)                      STATE     RESTARTS/CAP
 
 STORAGE (Volumes)                  
 [+] redis-data-goshort              Bound      500Mi
+```
+
+#### See CPU and Memory usage for an application
+
+```bash
+deployit top goshort
+
+--- [ RESOURCE USAGE: goshort ] ---
+POD NAME                                      CPU(cores)   MEMORY(bytes)
+goshort-869455f6cb-z9w5n                      1m          5Mi
 ```
 
 #### Delete an app

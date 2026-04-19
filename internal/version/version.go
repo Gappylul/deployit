@@ -8,9 +8,10 @@ import (
 	"time"
 )
 
-var CurrentVersion = "v1.2.0"
+var CurrentVersion = "v1.3.0"
 
 const RepoURL = "https://api.github.com/repos/gappylul/deployit/releases/latest"
+const OperatorRepoURL = "https://api.github.com/repos/gappylul/webapp-operator/releases/latest"
 
 type GithubRelease struct {
 	TagName string `json:"tag_name"`
@@ -33,6 +34,22 @@ func CheckForUpdate() string {
 		return release.TagName
 	}
 	return ""
+}
+
+func GetLatestOperatorVersion() string {
+	client := http.Client{Timeout: 2 * time.Second}
+	resp, err := client.Get(OperatorRepoURL)
+	if err != nil {
+		return CurrentVersion
+	}
+	defer resp.Body.Close()
+
+	var release GithubRelease
+	if err = json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		return CurrentVersion
+	}
+
+	return release.TagName
 }
 
 func isNewer(remote, local string) bool {

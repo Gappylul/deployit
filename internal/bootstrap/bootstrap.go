@@ -20,6 +20,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/retry"
 )
 
 //go:embed artifacts/*.tmpl
@@ -109,18 +110,19 @@ func restartOperator(ctx context.Context, kubeConfig *rest.Config) error {
 		return err
 	}
 
-	deployment, err := clientset.AppsV1().Deployments("deployit-system").Get(ctx, "webapp-operator", metav1.GetOptions{})
-	if err != nil {
-		return nil
-	}
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		deployment, err := clientset.AppsV1().Deployments("deployit-system").Get(ctx, "webapp-operator", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
 
-	latest := deployment.DeepCopy()
-	if latest.Spec.Template.Annotations == nil {
-		latest.Spec.Template.Annotations = make(map[string]string)
-	}
+		latest := deployment.DeepCopy()
+		if latest.Spec.Template.Annotations == nil {
+			latest.Spec.Template.Annotations = make(map[string]string)
+		}
+		latest.Spec.Template.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().Format(time.RFC3339)
 
-	latest.Spec.Template.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().Format(time.RFC3339)
-
-	_, err = clientset.AppsV1().Deployments("deployit-system").Update(ctx, latest, metav1.UpdateOptions{})
-	return err
+		_, err = clientset.AppsV1().Deployments("deployit-system").Update(ctx, latest, metav1.UpdateOptions{})
+		return err
+	})
 }

@@ -20,9 +20,13 @@ var setupCmd = &cobra.Command{
 			return fmt.Errorf("domain is required. Example: --domain yourdomain.com")
 		}
 
+		fmt.Println("Checking for latest operator version...")
+		latestOp := version.GetLatestOperatorVersion()
+		fmt.Printf("Using webapp-operator %s\n", latestOp)
+
 		config := bootstrap.SetupConfig{
 			Domain:          setupDomain,
-			OperatorVersion: version.CurrentVersion,
+			OperatorVersion: latestOp,
 		}
 
 		ctx := context.Background()
