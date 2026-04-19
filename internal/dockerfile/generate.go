@@ -123,11 +123,9 @@ CMD ["python", "main.py"]
 
 func GenerateIgnore(framework detect.Framework) string {
 	switch framework {
-	case detect.Vite:
-	case detect.NodeJs:
-	case detect.NodeTs:
-	case detect.Bun:
+	case detect.Vite, detect.NodeJs, detect.NodeTs, detect.Bun:
 		return nodeDockerIgnoreContent
+	default:
+		return ""
 	}
-	return ""
 }
