@@ -256,6 +256,8 @@ If a Dockerfile already exists it is used as-is. Otherwise deployit generates on
 | list       | List all deployed apps real-time status                    |
 | logs       | Stream real-time logs from your app                        |
 | services   | Show attached services (like redis) for an app             |
+| status     | Get the live status and event history of an app            |
+| top        | View CPU and Memory usage for an application               |
 | delete     | Delete app and clean up Cloudflare                         |
 | secrets    | List, set, or update app secrets                           |
 | cleanup    | Remove a hostname from Cloudflare only                     |
@@ -263,14 +265,15 @@ If a Dockerfile already exists it is used as-is. Otherwise deployit generates on
 
 ### Flags
 
-| Flag       | Default            | Description                      |
-|------------|--------------------|----------------------------------|
-| --host     | required           | Hostname to deploy to            |
-| --registry | $DEPLOYIT_REGISTRY | Container image registry         |
-| --replicas | 1                  | Number of pod replicas           |
-| --env      | none               | Environment variables            |
-| --with     | none               | Add extensions (postgres, redis) |
-| --tail     | 100                | Number of lines to show          |
+| Flag       | Default            | Description                          |
+|------------|--------------------|--------------------------------------|
+| --host     | required           | Hostname to deploy to                |
+| --registry | $DEPLOYIT_REGISTRY | Container image registry             |
+| --replicas | 1                  | Number of pod replicas               |
+| --env      | none               | Environment variables                |
+| --with     | none               | Add extensions (postgres, redis)     |
+| --tail     | 100                | Number of lines to show              |
+| --arch     | arm64              | target architecture (arm64 or amd64) |
 
 ### Architecture
 

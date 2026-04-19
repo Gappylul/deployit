@@ -11,14 +11,20 @@ type BuildOptions struct {
 	ContextPath string
 	ImageName   string
 	Tag         string
+	Platform    string
 }
 
 func BuildAndPush(ctx context.Context, opts BuildOptions) error {
 	fullTag := fmt.Sprintf("%s:%s", opts.ImageName, opts.Tag)
 
+	platform := opts.Platform
+	if platform == "" {
+		platform = "linux/arm64"
+	}
+
 	fmt.Printf("-> building %s\n", fullTag)
 	build := exec.CommandContext(ctx, "docker", "build",
-		"--platform", "linux/arm64",
+		"--platform", platform,
 		"-t", fullTag,
 		opts.ContextPath,
 	)

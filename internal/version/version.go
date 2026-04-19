@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var CurrentVersion = "v1.3.3"
+var CurrentVersion = "v1.3.4"
 
 const (
 	RepoURL         = "https://api.github.com/repos/gappylul/deployit/releases/latest"

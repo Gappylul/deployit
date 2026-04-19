@@ -26,6 +26,7 @@ var (
 	registry string
 	envVars  []string
 	withExt  []string
+	arch     string
 )
 
 var deployCmd = &cobra.Command{
@@ -73,10 +74,16 @@ var deployCmd = &cobra.Command{
 		tag := gitShortSHA()
 		fullImage := fmt.Sprintf("%s:%s", imageName, tag)
 
+		dockerPlatform := "linux/arm64"
+		if arch == "amd64" {
+			dockerPlatform = "linux/amd64"
+		}
+
 		if err := build.BuildAndPush(ctx, build.BuildOptions{
 			ContextPath: path,
 			ImageName:   imageName,
 			Tag:         tag,
+			Platform:    dockerPlatform,
 		}); err != nil {
 			return fmt.Errorf("build: %w", err)
 		}
@@ -149,6 +156,7 @@ func init() {
 	deployCmd.Flags().StringVar(&registry, "registry", defaultRegistry, "image registry e.g. ghcr.io/username (or set DEPLOYIT_REGISTRY)")
 	deployCmd.Flags().StringArrayVar(&envVars, "env", []string{}, "environment variables KEY=VALUE")
 	deployCmd.Flags().StringSliceVar(&withExt, "with", []string{}, "add extensions (postgres, redis)")
+	deployCmd.Flags().StringVar(&arch, "arch", "arm64", "target architecture (arm64 or amd64)")
 	deployCmd.MarkFlagRequired("host")
 	if defaultRegistry == "" {
 		deployCmd.MarkFlagRequired("registry")
