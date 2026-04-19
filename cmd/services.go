@@ -27,16 +27,20 @@ var servicesCmd = &cobra.Command{
 		pods, _ := clientset.CoreV1().Pods("default").List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
 		pvcs, _ := clientset.CoreV1().PersistentVolumeClaims("default").List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
 
+		if len(pods.Items) == 0 && len(pvcs.Items) == 0 {
+			fmt.Printf("STATUS REPORT: %s\n", appName)
+			fmt.Printf("\nNo active pods or storage found for '%s'.\n\n", appName)
+			return nil
+		}
+
 		maxLen := 15
 		for _, p := range pods.Items {
-			l := len(p.Name) + 4
-			if l > maxLen {
+			if l := len(p.Name) + 4; l > maxLen {
 				maxLen = l
 			}
 		}
 		for _, p := range pvcs.Items {
-			l := len(p.Name) + 4
-			if l > maxLen {
+			if l := len(p.Name) + 4; l > maxLen {
 				maxLen = l
 			}
 		}
@@ -50,17 +54,16 @@ var servicesCmd = &cobra.Command{
 
 		if len(pods.Items) == 0 {
 			fmt.Println("(none)")
-		}
-
-		for _, pod := range pods.Items {
-			indicator, state := getPodTextStatus(pod)
-			restarts := 0
-			if len(pod.Status.ContainerStatuses) > 0 {
-				restarts = int(pod.Status.ContainerStatuses[0].RestartCount)
+		} else {
+			for _, pod := range pods.Items {
+				indicator, state := getPodTextStatus(pod)
+				restarts := 0
+				if len(pod.Status.ContainerStatuses) > 0 {
+					restarts = int(pod.Status.ContainerStatuses[0].RestartCount)
+				}
+				name := fmt.Sprintf("%s %s", indicator, pod.Name)
+				fmt.Printf("%-*s %-10s %d\n", colWidth, name, state, restarts)
 			}
-
-			name := fmt.Sprintf("%s %s", indicator, pod.Name)
-			fmt.Printf("%-*s %-10s %d\n", colWidth, name, state, restarts)
 		}
 
 		if len(pvcs.Items) > 0 {
@@ -72,7 +75,6 @@ var servicesCmd = &cobra.Command{
 				}
 				capacity := pvc.Spec.Resources.Requests.Storage().String()
 				name := fmt.Sprintf("%s %s", indicator, pvc.Name)
-
 				fmt.Printf("%-*s %-10s %s\n", colWidth, name, pvc.Status.Phase, capacity)
 			}
 		}
