@@ -2,7 +2,9 @@ package version
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -10,17 +12,37 @@ import (
 
 var CurrentVersion = "v1.3.0"
 
-const RepoURL = "https://api.github.com/repos/gappylul/deployit/releases/latest"
-const OperatorRepoURL = "https://api.github.com/repos/gappylul/webapp-operator/releases/latest"
+const (
+	RepoURL         = "https://api.github.com/repos/gappylul/deployit/releases/latest"
+	OperatorRepoURL = "https://api.github.com/repos/gappylul/webapp-operator/releases"
+)
 
 type GithubRelease struct {
 	TagName string `json:"tag_name"`
 }
 
-func CheckForUpdate() string {
-	client := http.Client{Timeout: 1 * time.Second}
-	resp, err := client.Get(RepoURL)
+func newAuthenticatedRequest(method, url string) (*http.Request, error) {
+	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
+		return nil, err
+	}
+
+	token := os.Getenv("PAT_TOKEN")
+	if token != "" {
+		req.Header.Set("Authorization", "token "+token)
+	}
+	return req, nil
+}
+
+func CheckForUpdate() string {
+	client := http.Client{Timeout: 2 * time.Second}
+	req, err := newAuthenticatedRequest("GET", RepoURL)
+	if err != nil {
+		return ""
+	}
+
+	resp, err := client.Do(req)
+	if err != nil || resp.StatusCode != http.StatusOK {
 		return ""
 	}
 	defer resp.Body.Close()
@@ -38,18 +60,29 @@ func CheckForUpdate() string {
 
 func GetLatestOperatorVersion() string {
 	client := http.Client{Timeout: 2 * time.Second}
-	resp, err := client.Get(OperatorRepoURL)
+	req, err := newAuthenticatedRequest("GET", OperatorRepoURL)
 	if err != nil {
-		return CurrentVersion
+		return "latest"
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("⚠ Network error: %v\n", err)
+		return "latest"
 	}
 	defer resp.Body.Close()
 
-	var release GithubRelease
-	if err = json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		return CurrentVersion
+	if resp.StatusCode != http.StatusOK {
+		fmt.Printf("⚠ GitHub API returned %d\n", resp.StatusCode)
+		return "latest"
 	}
 
-	return release.TagName
+	var releases []GithubRelease
+	if err = json.NewDecoder(resp.Body).Decode(&releases); err != nil || len(releases) == 0 {
+		return "latest"
+	}
+
+	return releases[0].TagName
 }
 
 func isNewer(remote, local string) bool {
