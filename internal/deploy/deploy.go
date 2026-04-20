@@ -9,15 +9,38 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func Deploy(ctx context.Context, name, image, host string, replicas int32, env []corev1.EnvVar) error {
+func GetConfig() (*rest.Config, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		loadingRules, nil,
 	).ClientConfig()
+}
+
+func GetClientset() (*kubernetes.Clientset, error) {
+	config, err := GetConfig()
+	if err != nil {
+		return nil, err
+	}
+	return kubernetes.NewForConfig(config)
+}
+
+func ScaleDeployment(ctx context.Context, clientset *kubernetes.Clientset, name string, replicas int32) error {
+	scale, err := clientset.AppsV1().Deployments("default").GetScale(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	scale.Spec.Replicas = replicas
+	_, err = clientset.AppsV1().Deployments("default").UpdateScale(ctx, name, scale, metav1.UpdateOptions{})
+	return err
+}
+
+func Deploy(ctx context.Context, name, image, host string, replicas int32, env []corev1.EnvVar) error {
+	config, err := GetConfig()
 	if err != nil {
 		return fmt.Errorf("load kubeconfig: %w", err)
 	}
@@ -61,15 +84,4 @@ func Deploy(ctx context.Context, name, image, host string, replicas int32, env [
 
 	fmt.Printf("-> created WebApp %s\n", name)
 	return nil
-}
-
-func GetClientset() (*kubernetes.Clientset, error) {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		loadingRules, nil,
-	).ClientConfig()
-	if err != nil {
-		return nil, err
-	}
-	return kubernetes.NewForConfig(config)
 }

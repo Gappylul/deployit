@@ -116,6 +116,20 @@ deployit deploy ./my-api --host api.yourdomain.com --registry ghcr.io/your-usern
 deployit deploy ./my-app --host app.yourdomain.com --with redis
 ```
 
+#### Backup database
+
+```bash
+deployit backup postgresapp --type postgres
+-> Pulling Postgres backup to postgresapp_backup.sql...
+```
+
+#### Restore database
+
+```bash
+deployit restore postgresapp --type postgres --file postgresapp_backup.sql 
+-> Pushing postgresapp_backup.sql into postgres-postgresapp...
+```
+
 #### List deployed apps
 
 ```bash
@@ -253,6 +267,8 @@ If a Dockerfile already exists it is used as-is. Otherwise deployit generates on
 | Command    | Description                                                |
 |------------|------------------------------------------------------------|
 | deploy     | Build, push, deploy, configure DNS                         |
+| backup     | Backup database (Postgres or Redis) to a local file        |       |
+| restore    | Restore a local file into a database                       |
 | list       | List all deployed apps real-time status                    |
 | logs       | Stream real-time logs from your app                        |
 | services   | Show attached services (like redis) for an app             |
@@ -274,6 +290,8 @@ If a Dockerfile already exists it is used as-is. Otherwise deployit generates on
 | --with     | none               | Add extensions (postgres, redis)     |
 | --tail     | 100                | Number of lines to show              |
 | --arch     | arm64              | target architecture (arm64 or amd64) |
+| --file     | none               | The file to upload for restoration   |
+| --type     | postgres           | Database type for backup             |
 
 ### Architecture
 
@@ -315,6 +333,10 @@ When you deploy with extensions like `--with postgres/redis`, `deployit` automat
 - **SD-Card Friendly**: Uses `local-path` provisioning—it only consumes the actual bytes you write (pay-as-you-grow).
 - **Crash Proof**: Forces `--appendonly yes` so your data survives power cuts or Pod restarts.
 - **Auto-Wiring**: Connection strings (like `REDIS_URL`, `DATABASE_URL`) are injected directly into your app's secrets.
+
+**Dynamic Bootstrapping**: Automatically detects restored data and adjusts engine configurations (like disabling AOF temporarily) to ensure your `.rdb` or `.sql` files are prioritized on the first boot.
+
+**Restoration Helper**: `deployit restore` uses an isolated helper pod to clean, verify, and permission-fix your data volumes before your app ever touches them. This prevents "Permission Denied" errors and ensure binary-clean transfers from your local machine.
 
 ### Self-hosting
 

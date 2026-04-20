@@ -80,9 +80,19 @@ func EnsureRedis(ctx context.Context, clientset *kubernetes.Clientset, namespace
 						},
 					},
 					Containers: []corev1.Container{{
-						Name:  "redis",
-						Image: "redis:alpine",
-						Args:  []string{"redis-server", "--appendonly", "yes"},
+						Name:    "redis",
+						Image:   "redis:alpine",
+						Command: []string{"sh", "-c"},
+						Args: []string{`
+						  if [ -f /data/redis.conf ]; then
+							echo "Starting with restore override..."
+							cp /data/redis.conf /tmp/redis.conf
+							rm /data/redis.conf 
+							exec redis-server /tmp/redis.conf
+						  else
+							exec redis-server --appendonly yes
+						  fi
+					   `},
 						Ports: []corev1.ContainerPort{{ContainerPort: 6379}},
 						VolumeMounts: []corev1.VolumeMount{
 							{
