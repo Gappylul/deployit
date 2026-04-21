@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gappylul/deployit/internal/provision"
+	guardit "github.com/gappylul/guardit/pkg/sdk"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/gappylul/deployit/internal/build"
@@ -43,6 +44,26 @@ var deployCmd = &cobra.Command{
 			return fmt.Errorf("could not detect framework in %s", path)
 		}
 		fmt.Printf("-> detected: %s\n", framework)
+
+		fmt.Printf("-> guardit: checking policy (%s)\n", guardit.PolicySource())
+
+		policyResult, err := guardit.Check(guardit.DeploymentRequest{
+			Name:     name,
+			Image:    fmt.Sprintf("%s/%s:preflight", registry, name),
+			Replicas: replicas,
+			Labels:   map[string]string{"app": name},
+			Containers: []guardit.ContainerRequest{
+				{Name: name, ResourceLimitsDeclared: true},
+			},
+		})
+		if err != nil {
+			fmt.Printf("⚠ guardit error: %v (skipping local check)\n", err)
+		} else if !policyResult.Allowed {
+			fmt.Println(guardit.FormatViolations(policyResult))
+			return fmt.Errorf("deployment rejected by guardit policy — fix the above and retry")
+		} else {
+			fmt.Println("-> guardit: ✓ policy checks passed")
+		}
 
 		dockerfilePath := filepath.Join(path, "Dockerfile")
 		ignorePath := filepath.Join(path, ".dockerignore")
