@@ -115,16 +115,22 @@ var deployCmd = &cobra.Command{
 					return fmt.Errorf("redis provision failed: %w", err)
 				}
 			case "postgres":
-				fmt.Printf("-> provisioning attached postgres for %s (updating secrets)...\n", name)
+				fmt.Printf("-> provisioning attached postgres for %s...\n", name)
 				dbURL, err := provision.EnsurePostgres(ctx, k8sClient, "default", name)
 				if err != nil {
 					return fmt.Errorf("postgres provision failed: %w", err)
 				}
+
+				fmt.Println("-> updating application secrets with DATABASE_URL...")
+				err = provision.InjectDatabaseURL(ctx, k8sClient, "default", name, dbURL)
+				if err != nil {
+					return fmt.Errorf("failed to sync secret: %w", err)
+				}
+
 				parsedEnv = append(parsedEnv, corev1.EnvVar{
 					Name:  "DATABASE_URL",
 					Value: dbURL,
 				})
-				fmt.Println("-> injected DATABASE_URL")
 			}
 		}
 

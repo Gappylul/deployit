@@ -243,7 +243,7 @@ deployit version
 deployit v1.x.x
 ```
 
-This only touches Cloudflare — it does not affect the cluster.
+This only touches Cloudflare - it does not affect the cluster.
 
 ### Framework detection
 
@@ -316,7 +316,7 @@ spec:
 
 > Uses Git SHA for versioning. If the repository is 'dirty' (uncommitted changes), a timestamp is appended to force a fresh pull on the cluster.
 
-The operator handles the rest. Deleting the WebApp cascades — all child resources are cleaned up automatically.
+The operator handles the rest. Deleting the WebApp cascades - all child resources are cleaned up automatically.
 
 **Self-Contained Control Plane**
 > deployit is a **Zero-Dependency** binary. The Kubernetes manifests, RBAC roles, and the `webapp-operator` deployment are all embedded directly into the Go binary using `//go:embed`. You can install the entire platform on a fresh cluster without ever cloning a repository or writing a single line of YAML.
@@ -330,7 +330,7 @@ The operator handles the rest. Deleting the WebApp cascades — all child resour
 When you deploy with extensions like `--with postgres/redis`, `deployit` automates the boring data stuff:
 
 - **Durable Storage**: Automatically creates a **PersistentVolumeClaim (PVC)**.
-- **SD-Card Friendly**: Uses `local-path` provisioning—it only consumes the actual bytes you write (pay-as-you-grow).
+- **SD-Card Friendly**: Uses `local-path` provisioning-it only consumes the actual bytes you write (pay-as-you-grow).
 - **Crash Proof**: Forces `--appendonly yes` so your data survives power cuts or Pod restarts.
 - **Auto-Wiring**: Connection strings (like `REDIS_URL`, `DATABASE_URL`) are injected directly into your app's secrets.
 
@@ -345,7 +345,7 @@ The recommended setup:
 - Cluster: Raspberry Pi 5 running k3s
 - Ingress: Traefik (k3s default)
 - Operator: webapp-operator
-- Remote access: Tailscale — kubectl and deployit work from anywhere
-- Public access: Cloudflare Tunnel — no open ports required
+- Remote access: Tailscale - kubectl and deployit work from anywhere
+- Public access: Cloudflare Tunnel - no open ports required
 
 Total infrastructure cost: roughly 5 euros per month in electricity.

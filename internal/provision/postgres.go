@@ -8,6 +8,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -31,6 +32,28 @@ func EnsurePostgres(ctx context.Context, clientset *kubernetes.Clientset, ns, ap
 	ensurePostgresService(ctx, clientset, ns, appName, name)
 
 	return fmt.Sprintf("postgres://postgres:%s@%s:5432/%s?sslmode=disable", password, name, appName), nil
+}
+
+func InjectDatabaseURL(ctx context.Context, clientset *kubernetes.Clientset, ns, appName, dbURL string) error {
+	secretName := fmt.Sprintf("%s-secrets", appName)
+
+	secret, err := clientset.CoreV1().Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		_, err = clientset.CoreV1().Secrets(ns).Create(ctx, &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: ns},
+			StringData: map[string]string{"DATABASE_URL": dbURL},
+		}, metav1.CreateOptions{})
+		return err
+	} else if err != nil {
+		return err
+	}
+
+	if secret.Data == nil {
+		secret.Data = make(map[string][]byte)
+	}
+	secret.Data["DATABASE_URL"] = []byte(dbURL)
+	_, err = clientset.CoreV1().Secrets(ns).Update(ctx, secret, metav1.UpdateOptions{})
+	return err
 }
 
 func getOrCreatePostgresSecret(ctx context.Context, clientset *kubernetes.Clientset, ns, appName, secretName string) (string, error) {
