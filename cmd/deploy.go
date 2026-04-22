@@ -22,12 +22,13 @@ import (
 )
 
 var (
-	host     string
-	replicas int32
-	registry string
-	envVars  []string
-	withExt  []string
-	arch     string
+	host       string
+	replicas   int32
+	registry   string
+	envVars    []string
+	withExt    []string
+	arch       string
+	policyPath string
 )
 
 var deployCmd = &cobra.Command{
@@ -45,6 +46,15 @@ var deployCmd = &cobra.Command{
 		}
 		fmt.Printf("-> detected: %s\n", framework)
 
+		if policyPath != "" {
+			os.Setenv("GUARDIT_POLICY", policyPath)
+		} else {
+			candidate := filepath.Join(path, "guardit.yaml")
+			if _, err := os.Stat(candidate); err == nil {
+				os.Setenv("GUARDIT_POLICY", candidate)
+			}
+		}
+
 		fmt.Printf("-> guardit: checking policy (%s)\n", guardit.PolicySource())
 
 		policyResult, err := guardit.Check(guardit.DeploymentRequest{
@@ -60,7 +70,7 @@ var deployCmd = &cobra.Command{
 			fmt.Printf("⚠ guardit error: %v (skipping local check)\n", err)
 		} else if !policyResult.Allowed {
 			fmt.Println(guardit.FormatViolations(policyResult))
-			return fmt.Errorf("deployment rejected by guardit policy — fix the above and retry")
+			return fmt.Errorf("deployment rejected by guardit policy - fix the above and retry")
 		} else {
 			fmt.Println("-> guardit: ✓ policy checks passed")
 		}
@@ -184,6 +194,7 @@ func init() {
 	deployCmd.Flags().StringArrayVar(&envVars, "env", []string{}, "environment variables KEY=VALUE")
 	deployCmd.Flags().StringSliceVar(&withExt, "with", []string{}, "add extensions (postgres, redis)")
 	deployCmd.Flags().StringVar(&arch, "arch", "arm64", "target architecture (arm64 or amd64)")
+	deployCmd.Flags().StringVar(&policyPath, "policy", "", "guardit policy file (default: <project>/guardit.yaml or ~/guardit.yaml)")
 	deployCmd.MarkFlagRequired("host")
 	if defaultRegistry == "" {
 		deployCmd.MarkFlagRequired("registry")

@@ -281,17 +281,18 @@ If a Dockerfile already exists it is used as-is. Otherwise deployit generates on
 
 ### Flags
 
-| Flag       | Default            | Description                          |
-|------------|--------------------|--------------------------------------|
-| --host     | required           | Hostname to deploy to                |
-| --registry | $DEPLOYIT_REGISTRY | Container image registry             |
-| --replicas | 1                  | Number of pod replicas               |
-| --env      | none               | Environment variables                |
-| --with     | none               | Add extensions (postgres, redis)     |
-| --tail     | 100                | Number of lines to show              |
-| --arch     | arm64              | target architecture (arm64 or amd64) |
-| --file     | none               | The file to upload for restoration   |
-| --type     | postgres           | Database type for backup             |
+| Flag       | Default                    | Description                          |
+|------------|----------------------------|--------------------------------------|
+| --host     | required                   | Hostname to deploy to                |
+| --registry | $DEPLOYIT_REGISTRY         | Container image registry             |
+| --replicas | 1                          | Number of pod replicas               |
+| --env      | none                       | Environment variables                |
+| --with     | none                       | Add extensions (postgres, redis)     |
+| --tail     | 100                        | Number of lines to show              |
+| --arch     | arm64                      | target architecture (arm64 or amd64) |
+| --file     | none                       | The file to upload for restoration   |
+| --type     | postgres                   | Database type for backup             |
+| --policy   | project/ or ~/guardit.yaml | guardit policy file path             |
 
 ### Architecture
 
@@ -337,6 +338,22 @@ When you deploy with extensions like `--with postgres/redis`, `deployit` automat
 **Dynamic Bootstrapping**: Automatically detects restored data and adjusts engine configurations (like disabling AOF temporarily) to ensure your `.rdb` or `.sql` files are prioritized on the first boot.
 
 **Restoration Helper**: `deployit restore` uses an isolated helper pod to clean, verify, and permission-fix your data volumes before your app ever touches them. This prevents "Permission Denied" errors and ensure binary-clean transfers from your local machine.
+
+**Guardit usage**: `deployit` uses the [guardit](https://github.com/gappylul/guardit) sdk to control the deployment using policies that can be described in a `guardit.yaml` file.\
+_Example:_
+```yaml
+apiVersion: guardit.gappy.hu/v1
+kind: Policy
+metadata:
+  name: gappy-local-defaults
+spec:
+  replicaLimit: 5
+  allowedRegistries:
+    - ghcr.io/gappylul
+  requiredLabels:
+    - app
+  requireResourceLimits: false
+```
 
 ### Self-hosting
 
