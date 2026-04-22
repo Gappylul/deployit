@@ -81,7 +81,7 @@ func EnsureRedis(ctx context.Context, clientset *kubernetes.Clientset, namespace
 					},
 					Containers: []corev1.Container{{
 						Name:    "redis",
-						Image:   "redis:alpine",
+						Image:   "docker.io/library/redis:alpine",
 						Command: []string{"sh", "-c"},
 						Args: []string{`
 						  if [ -f /data/redis.conf ]; then

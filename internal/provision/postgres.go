@@ -115,7 +115,7 @@ func ensurePostgresDeployment(ctx context.Context, clientset *kubernetes.Clients
 					Containers: []corev1.Container{
 						{
 							Name:  "postgres",
-							Image: "postgres:16-alpine",
+							Image: "docker.io/library/postgres:16-alpine",
 							Env: []corev1.EnvVar{
 								{
 									Name: "POSTGRES_PASSWORD",
